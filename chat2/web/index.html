@@ -77,21 +77,23 @@
 
 
 
- <input class="textarea" type="text" placeholder="Type here!" id="msg"/><div class="emojis"><button id="myBtn">Try it</button></div>
+ <input class="textarea" type="text" placeholder="Type here!" id="msg"/><input class="textarea2" type="text" placeholder="Type here!" id="msg_translation"/><div class="emojis"><button id="myBtn">Try it</button></div>
 
   <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
 
     <script src="js/index.js"></script>
 
-    <script>AUTOBAHN_DEBUG = true;</script>
-    <script src="js/autobahn.min.js"></script>
+      <script>AUTOBAHN_DEBUG = false;</script>
+            <script src="js/autobahn.min.js"></script>
 
       <script>
+         console.log("Runnning on AutobahnJS ", autobahn.version);
+
          // the URL of the WAMP Router (Crossbar.io)
          //
          var wsuri;
          if (document.location.origin == "file://") {
-            wsuri = "ws://127.0.0.1:9001/ws";
+            wsuri = "ws://127.0.0.1:8080/ws";
 
          } else {
             wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" +
@@ -115,16 +117,56 @@
          // fired when connection is established and session attached
          //
          connection.onopen = function (session, details) {
+         
+            function draw_message(message,user_id) {
+                var timeline = document.getElementById("tl");
+                var li = document.createElement("li");
+                var icon = document.createElement("div");
 
-            console.log("Connected");
+                icon.className="timeline-badge danger"
+                icon.innerHtml= '<i class="glyphicon glyphicon-check"></i>'
+
+                if (message['sender'] == user_id){
+                    li.className="timeline-inverted";
+                } else {
+                    li.className="timeline";
+                }
+                
+                var dp = document.createElement("div");
+                dp.className = "timeline-panel";
+                var dh = document.createElement("div");
+                dh.classname = "timeline-heading";
+                dh.innerHTML='<h4 class="timeline-title">' + message['content'] + '</h4>';
+
+                var db = document.createElement("div");
+                db.classname = "timeline-body";
+                var msg = document.createElement("p");
+
+                msg.innerHTML = message['translation'];
+                
+                li.appendChild(icon);
+                db.appendChild(msg)  
+                dp.appendChild(dh);     
+                dp.appendChild(db);     
+                li.appendChild(dp);
+
+                timeline.appendChild(li);
+                window.scrollTo(0,document.body.scrollHeight);   
+
+            }
+
+
+            console.log("Connected: ", details);
 
             // SUBSCRIBE to a topic and receive events
             //
-            function on_counter (args) {
-               var counter = args[0];
-               console.log("on_counter() event received with counter " + counter);
+            function on_message (args) {
+               var data = args[0];
+               console.log("on_message() event received with data " + data);
+               draw_message(data,session.id);
             }
-            session.subscribe('com.example.oncounter', on_counter).then(
+            
+            session.subscribe('chat.on_message', on_message).then(
                function (sub) {
                   console.log('subscribed to topic');
                },
@@ -134,16 +176,19 @@
             );
 
 
-            // PUBLISH an event every second
-            //
-            t1 = setInterval(function () {
+        document.getElementById("myBtn").addEventListener("click", function(){
+            console.log("ARGGHHH");
+            message = {};
+            message['sender'] = session.id;
+            message['content'] = 'M' + document.getElementById("msg").value;
+            message['translation'] = 'T'+ document.getElementById("msg_translation").value;
+            console.log(message);
+            session.publish('chat.on_message', [message]);
+            draw_message(message,message['sender']) 
+      });
+    
+    };
 
-               session.publish('com.example.onhello', ['Hello from JavaScript (browser)']);
-               console.log("published to topic 'com.example.onhello'");
-            }, 1000);
-
-
-         };
 
 
          // fired when connection was lost (or could not be established)
