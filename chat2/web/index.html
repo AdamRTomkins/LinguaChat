@@ -135,24 +135,65 @@
                 var dp = document.createElement("div");
                 dp.className = "timeline-panel";
                 var dh = document.createElement("div");
-                dh.classname = "timeline-heading";
+                dh.className = "timeline-heading";
                 dh.innerHTML='<h4 class="timeline-title">' + message['content'] + '</h4>';
 
                 var db = document.createElement("div");
-                db.classname = "timeline-body";
+                db.className = "timeline-body";
                 var msg = document.createElement("p");
 
                 msg.innerHTML = message['translation'];
                 
+                var show_translation = document.createElement("div");
+                show_translation.className = "show-translation";
+                var translation_button = document.createElement("p");
+                translation_button.innerHTML = '<small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> translation</small>';
+                
+                show_translation.appendChild(translation_button);
+
+                
+                var translation_div = document.createElement("div");
+                translation_div.className = "translation";
+                translation_div.appendChild(document.createElement("hr"));
+                var translation_text = document.createElement("p");
+                translation_text.innerHTML = message['translation'];
+                translation_div.appendChild(translation_text);
+   
+                var edit_div = document.createElement("div");
+                edit_div.className = "show-suggestion";
+                var suggestion_button = document.createElement("p");
+                suggestion_button.innerHTML = '<small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> suggest change</small>';
+                edit_div.appendChild(suggestion_button);
+                //show_translation.appendChild(msg);
+                
+                var change_div = document.createElement("div");
+                change_div.className = "change";
+                change_div.appendChild(document.createElement("hr"));
+                var form_div = document.createElement("form");
+                form_div.innerHTML = '<textarea class="form-control" name="message" rows="2" cols="30">The cat was playing in the garden.</textarea><br><input type="submit">';
+    
+               change_div.appendChild(form_div);
+                
+                
+                
+                   
+                translation_div.appendChild(edit_div);
+               translation_div.appendChild(change_div);
+                
+                
+                
+
+                   
                 li.appendChild(icon);
-                db.appendChild(msg)  
+                db.appendChild(show_translation);  
+                db.appendChild(translation_div);  
                 dp.appendChild(dh);     
                 dp.appendChild(db);     
                 li.appendChild(dp);
 
                 timeline.appendChild(li);
                 window.scrollTo(0,document.body.scrollHeight);   
-
+                
             }
 
 

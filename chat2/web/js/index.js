@@ -33,12 +33,17 @@
 })();
 
 
-$('.show-translation').click(function (){
-    $(this).next('.translation').toggle();
+//$('.show-translation').click(function (){
+//    $(this).next('.translation').toggle();
+//});
+
+
+
+$(document).on('click', '.show-translation', function() {
+     $(this).next('div.translation').toggle();
 });
 
-
-$('.show-suggestion').click(function (){
+$(document).on('click', '.show-suggestion', function() {
     $(this).next('.change').toggle();
 });
 
