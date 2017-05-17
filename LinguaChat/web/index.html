@@ -8,9 +8,9 @@
   <link rel='stylesheet prefetch' href='http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css'>
 
       <link rel="stylesheet" href="css/style.css">
-
-        <script src="js/bootbox.min.js"></script>
-</head>
+        <script src="js/bootbox.js"></script>
+        
+        </head>
 
 <body>
   <div class="container">
@@ -19,7 +19,7 @@
     </div>
     <ul class="timeline" id = "tl">
         <li>
-        <div class="timeline-badge danger"><i class="glyphicon glyphicon-credit-card"></i></div>
+        <div class="timeline-badge success"><i class="glyphicon glyphicon-heart"></i></div>
           
           <div class="timeline-panel">
       
@@ -29,15 +29,29 @@
                 <div class="show-translation">
                     <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> translation</small></p>
                 </div>
-                <div class="translation"><hr>What can I see in the Forest? <!-- HIDDEN DIV TO BE SHOWN WHEN LINK CLICKED -->
+                <div class="translation"><hr>Unaltered messages will show as green!<hr>
+
+                <div class="show-recieved-suggestions">
+                    <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-info-sign"></i> suggested changes</small></p>
+                </div>
+                <div class="recieved-suggestions">
+                    <ul id = "edit_list">
+                        <li> Est-ce que je voir dans le forêt. <br>
+                    <small class="text-muteds"><i class="glyphicon glyphicon-ok"></i> accept</small>
+                    <small class="text-muted"><i class="glyphicon glyphicon-remove"></i> ignore</small>
+                        </li>
+                    </ul>
+                    <hr>
+                </div>
+
 
 
                 <div class="show-suggestion">
-                    <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> suggest change</small></p>
+                    <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-question-sign"></i> suggest change</small></p>
                 </div>
 
                 <div class="change"><hr>
-  <textarea class="form-control" name="message" rows="2"  cols="30">The cat was playing in the garden.</textarea>
+  <textarea class="form-control" name="message" rows="2"  cols="30">Here, you can suggest an edit to the French text. The author will be notified </textarea>
   <br>
   <input class="submit-suggestion"  type="submit">
 </div> <!-- HIDDEN DIV TO BE SHOWN WHEN LINK CLICKED -->
@@ -46,7 +60,7 @@
           </div>
         </li>
         <li class="timeline-inverted">
-          <div class="timeline-badge warning"><i class="glyphicon glyphicon-heart"></i></div>
+          <div class="timeline-badge warning"><i class="glyphicon glyphicon-question-sign"></i></div>
           <div class="timeline-panel">
       
             <div class="timeline-body">
@@ -109,27 +123,23 @@
          });
 
 
-         // timers
-         //
-         var t1, t2;
-
-
          // fired when connection is established and session attached
          //
          connection.onopen = function (session, details) {
          
-            function draw_message(message,user_id,message_id) {
+            function draw_message(message,user_id) {
 
                 var timeline = document.getElementById("tl");
                 var li = document.createElement("li");
                 li.setAttribute('user_id',user_id)
-                li.setAttribute('message_id',message_id)
+                li.setAttribute('message_id',message['message_id'])
 
                 var icon = document.createElement("div");
 
-                icon.className="timeline-badge danger"
+                icon.className="timeline-badge success"
                 icon.innerHtml= '<i class="glyphicon glyphicon-check"></i>'
-
+                icon.setAttribute('message_id',message['message_id']);
+                icon.id = "message-icon-"+message['message_id'];
                 if (message['sender'] == user_id){
                     li.className="timeline-inverted";
                 } else {
@@ -168,7 +178,7 @@
                 var suggestion_button = document.createElement("p");
                 suggestion_button.innerHTML = '<small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> suggest change</small>'
                 suggestion_button.setAttribute('user_id',message['sender']);
-                suggestion_button.setAttribute('message_id',message_id);
+                suggestion_button.setAttribute('message_id',message['message_id']);
                 edit_div.appendChild(suggestion_button);
                 //show_translation.appendChild(msg);
                 
@@ -179,7 +189,7 @@
                 change_div.appendChild(document.createElement("hr"));
                 var suggestion_text = document.createElement("textarea");
                 suggestion_text.className="form-control"
-                suggestion_text.id="suggestion-"+message_id
+                suggestion_text.id="suggestion-"+message['message_id']
                 suggestion_text.name="message"
                 suggestion_text.rows="2"
                 suggestion_text.cols="30"
@@ -192,7 +202,7 @@
                 var suggestion_submit = document.createElement("input");
                 suggestion_submit.type = "submit";
                 suggestion_submit.setAttribute('user_id',message['sender']);
-                suggestion_submit.setAttribute('message_id',message_id);
+                suggestion_submit.setAttribute('message_id',message['message_id']);
                 suggestion_submit.className="submit-suggestion";
     
                 change_div.appendChild(suggestion_submit);
@@ -220,8 +230,7 @@
             function on_message (args) {
                var data = args[0];
                console.log("on_message() event received with data ")
-               console.log(data);
-               draw_message(data,session.id,999);
+               draw_message(data,session.id);
             }
             
             session.subscribe('chat.on_message', on_message).then(
@@ -240,6 +249,8 @@
                console.log("on_suggestion() event received with data ")
                console.log(data);
                alert("edit recieved");
+               var icon = document.getElementById("message-icon-" +  message['message_id'])
+                icon.className="timeline-badge danger"
             }
             
             session.subscribe('chat.edit.'+session.id, on_suggestion).then(
@@ -257,9 +268,10 @@
             message['sender'] = session.id;
             message['content'] = 'M' + document.getElementById("msg").value;
             message['translation'] = 'T'+ document.getElementById("msg_translation").value;
+            message['message_id'] = session.id + '-' + 'room_id' + '-' +  Date.now()  // TODO: Add room Id
             console.log(message);
             session.publish('chat.on_message', [message]);
-            draw_message(message,session.id,999) 
+            draw_message(message,session.id) 
       });
 
 

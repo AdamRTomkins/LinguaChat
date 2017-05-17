@@ -41,6 +41,11 @@ $(document).on('click', '.show-suggestion', function() {
     $(this).next('.change').toggle();
 });
 
+$(document).on('click', '.show-recieved-suggestions', function() {
+    $(this).next('.recieved-suggestions').toggle();
+});
+
+
 $(document).on('click', '.submit-suggestion', function() {
 
     reciever = $(this).attr("user_id");
@@ -50,13 +55,10 @@ $(document).on('click', '.submit-suggestion', function() {
     message['sender'] = connection.session.id;
     message['reciever'] = reciever;
     message['message_id'] = message_id;
-    fc = $(this).prev().prev()
-    console.log(fc)
     message['suggestion'] = document.getElementById("suggestion-"+message_id).value;
     message['reason'] = document.getElementById("suggestion-"+message_id).value;;
 
-    console.log(message);
-    channel = 'chat.edit.' + reciever + '.' + message_id
+    channel = 'chat.edit.' + reciever 
     console.log(channel);
     connection.session.publish(channel, [message]);
 
