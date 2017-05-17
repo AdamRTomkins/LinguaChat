@@ -9,7 +9,7 @@
 
       <link rel="stylesheet" href="css/style.css">
 
-  
+        <script src="js/bootbox.min.js"></script>
 </head>
 
 <body>
@@ -36,11 +36,11 @@
                     <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> suggest change</small></p>
                 </div>
 
-                <div class="change"><hr><form>
+                <div class="change"><hr>
   <textarea class="form-control" name="message" rows="2"  cols="30">The cat was playing in the garden.</textarea>
   <br>
-  <input type="submit">
-</form></div> <!-- HIDDEN DIV TO BE SHOWN WHEN LINK CLICKED -->
+  <input class="submit-suggestion"  type="submit">
+</div> <!-- HIDDEN DIV TO BE SHOWN WHEN LINK CLICKED -->
 </div>
             </div>
           </div>
@@ -62,11 +62,11 @@
                     <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> suggest change</small></p>
                 </div>
 
-                <div class="change"><hr><form>
+                <div class="change"><hr>
   <textarea class="form-control" name="message" rows="2" cols="30">The cat was playing in the garden.</textarea>
   <br>
-  <input type="submit">
-</form></div> <!-- HIDDEN DIV TO BE SHOWN WHEN LINK CLICKED -->
+  <input class="submit-suggestion" type="submit">
+</div> <!-- HIDDEN DIV TO BE SHOWN WHEN LINK CLICKED -->
 </div>
             </div>
           </div>
@@ -118,9 +118,13 @@
          //
          connection.onopen = function (session, details) {
          
-            function draw_message(message,user_id) {
+            function draw_message(message,user_id,message_id) {
+
                 var timeline = document.getElementById("tl");
                 var li = document.createElement("li");
+                li.setAttribute('user_id',user_id)
+                li.setAttribute('message_id',message_id)
+
                 var icon = document.createElement("div");
 
                 icon.className="timeline-badge danger"
@@ -162,27 +166,39 @@
                 var edit_div = document.createElement("div");
                 edit_div.className = "show-suggestion";
                 var suggestion_button = document.createElement("p");
-                suggestion_button.innerHTML = '<small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> suggest change</small>';
+                suggestion_button.innerHTML = '<small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> suggest change</small>'
+                suggestion_button.setAttribute('user_id',message['sender']);
+                suggestion_button.setAttribute('message_id',message_id);
                 edit_div.appendChild(suggestion_button);
                 //show_translation.appendChild(msg);
                 
                 var change_div = document.createElement("div");
                 change_div.className = "change";
+
+
                 change_div.appendChild(document.createElement("hr"));
-                var form_div = document.createElement("form");
-                form_div.innerHTML = '<textarea class="form-control" name="message" rows="2" cols="30">The cat was playing in the garden.</textarea><br><input type="submit">';
+                var suggestion_text = document.createElement("textarea");
+                suggestion_text.className="form-control"
+                suggestion_text.id="suggestion-"+message_id
+                suggestion_text.name="message"
+                suggestion_text.rows="2"
+                suggestion_text.cols="30"
+                suggestion_text.innerHTML="Suggestion Here"
+
+                change_div.appendChild(suggestion_text);
+
+                change_div.appendChild(document.createElement("br"));
     
-               change_div.appendChild(form_div);
-                
-                
-                
+                var suggestion_submit = document.createElement("input");
+                suggestion_submit.type = "submit";
+                suggestion_submit.setAttribute('user_id',message['sender']);
+                suggestion_submit.setAttribute('message_id',message_id);
+                suggestion_submit.className="submit-suggestion";
+    
+                change_div.appendChild(suggestion_submit);
                    
                 translation_div.appendChild(edit_div);
-               translation_div.appendChild(change_div);
-                
-                
-                
-
+                translation_div.appendChild(change_div);
                    
                 li.appendChild(icon);
                 db.appendChild(show_translation);  
@@ -203,8 +219,9 @@
             //
             function on_message (args) {
                var data = args[0];
-               console.log("on_message() event received with data " + data);
-               draw_message(data,session.id);
+               console.log("on_message() event received with data ")
+               console.log(data);
+               draw_message(data,session.id,999);
             }
             
             session.subscribe('chat.on_message', on_message).then(
@@ -216,17 +233,37 @@
                }
             );
 
+            // SUBSCRIBE to a topic and receive events
+            //
+            function on_suggestion (args) {
+               var data = args[0];
+               console.log("on_suggestion() event received with data ")
+               console.log(data);
+               alert("edit recieved");
+            }
+            
+            session.subscribe('chat.edit.'+session.id, on_suggestion).then(
+               function (sub) {
+                  console.log('subscribed to topic chat.edit.'+session.id);
+               },
+               function (err) {
+                  console.log('failed to subscribe to topic chat.edit', err);
+               }
+            );
+
 
         document.getElementById("myBtn").addEventListener("click", function(){
-            console.log("ARGGHHH");
             message = {};
             message['sender'] = session.id;
             message['content'] = 'M' + document.getElementById("msg").value;
             message['translation'] = 'T'+ document.getElementById("msg_translation").value;
             console.log(message);
             session.publish('chat.on_message', [message]);
-            draw_message(message,message['sender']) 
+            draw_message(message,session.id,999) 
       });
+
+
+
     
     };
 
@@ -252,6 +289,5 @@
          connection.open();
 
       </script>
-
 </body>
 </html>

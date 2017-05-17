@@ -33,12 +33,6 @@
 })();
 
 
-//$('.show-translation').click(function (){
-//    $(this).next('.translation').toggle();
-//});
-
-
-
 $(document).on('click', '.show-translation', function() {
      $(this).next('div.translation').toggle();
 });
@@ -47,6 +41,30 @@ $(document).on('click', '.show-suggestion', function() {
     $(this).next('.change').toggle();
 });
 
+$(document).on('click', '.submit-suggestion', function() {
+
+    reciever = $(this).attr("user_id");
+    message_id=$(this).attr("message_id");
+
+    message = {};
+    message['sender'] = connection.session.id;
+    message['reciever'] = reciever;
+    message['message_id'] = message_id;
+    fc = $(this).prev().prev()
+    console.log(fc)
+    message['suggestion'] = document.getElementById("suggestion-"+message_id).value;
+    message['reason'] = document.getElementById("suggestion-"+message_id).value;;
+
+    console.log(message);
+    channel = 'chat.edit.' + reciever + '.' + message_id
+    console.log(channel);
+    connection.session.publish(channel, [message]);
+
+    $(this).prev('.change').toggle();
+
+});
+   
+//
 
 
 
