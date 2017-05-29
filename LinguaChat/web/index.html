@@ -24,106 +24,38 @@
         <input type="text" placeholder="Translation" autofocus class="text-input" v-model="translation">
         <button v-on:click="sendMessage">Send</button>
 
+        <div class="container">
+            <div class="page-header">
+                <h1 id="timeline">L'Adventure de Francais</h1>
+            </div>
+            <ul class="timeline" id="tl">
 
-        <ul>
-            <li v-for="(item,index) in message_list">
-                {{ item.message }} <button v-on:click="removeMessage(index)">reject</button>
-            </li>
-        </ul>
-        <pre>{{ $data }}</pre>
-
-    </div>
+                <li v-for="(item,index) in message_list" >
+                    <div class="timeline-badge success"><i class="glyphicon glyphicon-heart"></i></div>
+                        <div class="timeline-panel">
+                        <div class="timeline-body">
 
 
-
-    <div class="container">
-        <div class="page-header">
-            <h1 id="timeline">L'Adventure de Francais</h1>
+                        {{ item.message }} <button v-on:click="removeMessage(index,item.author,item.message_id)">reject</button>
+                        <ul>
+                            <li v-for="edit in edit_list[item.message_id]"> {{ edit.message }}
+                            <button v-on:click="acceptEdit(edit.message_id,edit.exit_id,edit.message)">accept</button> 
+                            </li>
+                        </ul>
+                        <edit-form v-on:event_child="sendEdit" :message_id=item.message_id :author_id=item.author></edit-form>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        
         </div>
-        <ul class="timeline" id="tl">
-            <li>
-                <div class="timeline-badge success"><i class="glyphicon glyphicon-heart"></i></div>
-
-                <div class="timeline-panel">
-
-                    <div class="timeline-body">
-                        <p>Est-ce que je voir dans le foret?</p>
-
-                        <div class="show-translation">
-                            <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> translation</small></p>
-                        </div>
-                        <div class="translation">
-                            <hr>Unaltered messages will show as green!
-                            <hr>
-
-                            <div class="show-recieved-suggestions">
-                                <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-info-sign"></i> suggested changes</small></p>
-                            </div>
-                            <div class="recieved-suggestions">
-                                <ul id="edit_list">
-                                    <li> Est-ce que je voir dans le forêt. <br>
-                                        <small class="text-muteds"><i class="glyphicon glyphicon-ok"></i> accept</small>
-                                        <small class="text-muted"><i class="glyphicon glyphicon-remove"></i> ignore</small>
-                                    </li>
-                                </ul>
-                                <hr>
-                            </div>
-
-
-
-                            <div class="show-suggestion">
-                                <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-question-sign"></i> suggest change</small></p>
-                            </div>
-
-                            <div class="change">
-                                <hr>
-                                <textarea class="form-control" name="message" rows="2" cols="30">Here, you can suggest an edit to the French text. The author will be notified </textarea>
-                                <br>
-                                <input class="submit-suggestion" type="submit">
-                            </div>
-                            <!-- HIDDEN DIV TO BE SHOWN WHEN LINK CLICKED -->
-                        </div>
-                    </div>
-                </div>
-            </li>
-            <li class="timeline-inverted">
-                <div class="timeline-badge warning"><i class="glyphicon glyphicon-question-sign"></i></div>
-                <div class="timeline-panel">
-
-                    <div class="timeline-body">
-                        <p>Est-ce que je voir dans le foret?</p>
-
-                        <div class="show-translation">
-                            <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> translation</small></p>
-                        </div>
-                        <div class="translation">
-                            <hr>What can I see in the Forest?
-                            <!-- HIDDEN DIV TO BE SHOWN WHEN LINK CLICKED -->
-
-
-                            <div class="show-suggestion">
-                                <p><small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> suggest change</small></p>
-                            </div>
-
-                            <div class="change">
-                                <hr>
-                                <textarea class="form-control" name="message" rows="2" cols="30">The cat was playing in the garden.</textarea>
-                                <br>
-                                <input class="submit-suggestion" type="submit">
-                            </div>
-                            <!-- HIDDEN DIV TO BE SHOWN WHEN LINK CLICKED -->
-                        </div>
-                    </div>
-                </div>
-            </li>
-        </ul>
+        
+        <pre>{{ $data }}</pre>
+                                                                                            
 
     </div>
 
 
-
-    <input class="textarea" type="text" placeholder="Type here!" id="msg" /><input class="textarea2" type="text" placeholder="Type here!" id="msg_translation" />
-    <div class="emojis"><button id="myBtn">Try it</button></div>
 
     <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
 
@@ -133,6 +65,8 @@
         AUTOBAHN_DEBUG = false;
     </script>
     <script src="js/autobahn.min.js"></script>
+
+</div>
 
     <script>
         console.log("Runnning on AutobahnJS ", autobahn.version);
@@ -161,21 +95,72 @@
         //
         connection.onopen = function(session, details) {
 
+
+            var editForm = {
+                props: ['message_id','author_id'],
+                
+                       template: '<div> <input v-model="message"> <button  v-on:click="emit">Send Edit</button> </div>',
+                
+                data: function () {
+                      return {
+                              message: "Put your edit here",
+                      }
+                },
+                methods: {
+                    emit: function() {
+                                    alert('Sending');
+                                    this.$emit('event_child',this.message_id,this.author_id,this.message);
+                              }
+                }
+                    
+            }
+
+            
+
+
+
             var v = new Vue({
                 el: '#app',
+                components: {
+                    'edit-form': editForm,
+                },
                 data: {
                     user: session.id,
                     room: 0,
                     message: '',
                     translation: '',
                     message_list: [],
-                    suggestion_list: {}
-
+                    suggestion_list: {},
+                    edit_list : {}
                 },
-
+                
                 methods: {
-                    removeMessage: function(index) {
+                    //acceptEdit: function(edit.message_id,edit.exit_id,edit.message)
+                    //{
+                    //    // Update Local Record
+                    //    // Forward Update to All Listeners
+                    //},
+                    sendEdit: function(message_id,author_id,message)
+                    {
+                        var message_data = {};
+                        message_data['author'] = author_id;
+                        message_data['message'] = message;
+                        message_data['message_id'] = message_id
+                        message_data['edit_id'] = 'edit-' +  '-' + this.room + '-' + Date.now();
+                        
+                        session.publish('chat.on_suggestion.'+author_id, [message_data]);
+                        this.suggestion_list=  Object.assign({}, this.suggestion_list, {[message_id]:message_data});
+                        var KEY = message_id;
+                        if (!(KEY in this.edit_list)) 
+                        {this.edit_list[KEY] = [];    }
+                
+                        this.edit_list[KEY].push(message_data);    
+                    },
+
+                    removeMessage: function(index,author,message_id) {
                         this.message_list.splice(index, 1);
+                        alert(author);
+                        alert(message_id);
                     },
 
                     sendMessage: function() {
@@ -186,133 +171,19 @@
                         message_data['author'] = this.user;
                         message_data['message'] = message;
                         message_data['translation'] = translation;
-                        message_data['message_id'] = 'edit-' + this.user + '-' + this.room + '-' + Date.now()
+                        message_data['message_id'] = 'msg-' + this.user + '-' + this.room + '-' + Date.now()
+                        message_data['class'] = ""
 
                         session.publish('chat.on_message', [message_data]);
+                        message_data['class'] = "timeline-inverted"
                         this.message_list.push(message_data);
                     }
-
-                    sendSuggestons: function(reviever,message) {
-                        //var message = this.message.trim();
-                        //var translation = this.translation.trim();
-
-                        var suggestion_data = {};
-       
-                        suggestion_data = {};
-                        suggestion_data['sender'] = this.user;
-                        suggestion_data['author'] = reciever;
-                        suggestion_data['suggeston_id'] = 'edit-' + this.user + '-' + this.room + '-' + Date.now();                      
-                         
-                        suggestion_data['message_id'] = message; // 
-                        
-                        suggestion_data['suggestion'] = document.getElementById("suggestion-"+message_id).value;
-
-                        session.publish('chat.on_suggestion.'+reciever, [suggestion_data]);
-                        this.suggestion_list.push(suggestion_data);
-                    }
-
-
                 }
+
+
 
 
             })
-
-
-
-            function draw_message(message, user_id) {
-
-                var timeline = document.getElementById("tl");
-                var li = document.createElement("li");
-                li.setAttribute('user_id', user_id)
-                li.setAttribute('message_id', message['message_id'])
-
-                var icon = document.createElement("div");
-
-                icon.className = "timeline-badge success"
-                icon.innerHtml = '<i class="glyphicon glyphicon-check"></i>'
-                icon.setAttribute('message_id', message['message_id']);
-                icon.id = "message-icon-" + message['message_id'];
-                if (message['sender'] == user_id) {
-                    li.className = "timeline-inverted";
-                } else {
-                    li.className = "timeline";
-                }
-
-                var dp = document.createElement("div");
-                dp.className = "timeline-panel";
-                var dh = document.createElement("div");
-                dh.className = "timeline-heading";
-                dh.innerHTML = '<h4 class="timeline-title">' + message['content'] + '</h4>';
-
-                var db = document.createElement("div");
-                db.className = "timeline-body";
-                var msg = document.createElement("p");
-
-                msg.innerHTML = message['translation'];
-
-                var show_translation = document.createElement("div");
-                show_translation.className = "show-translation";
-                var translation_button = document.createElement("p");
-                translation_button.innerHTML = '<small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> translation</small>';
-
-                show_translation.appendChild(translation_button);
-
-
-                var translation_div = document.createElement("div");
-                translation_div.className = "translation";
-                translation_div.appendChild(document.createElement("hr"));
-                var translation_text = document.createElement("p");
-                translation_text.innerHTML = message['translation'];
-                translation_div.appendChild(translation_text);
-
-                var edit_div = document.createElement("div");
-                edit_div.className = "show-suggestion";
-                var suggestion_button = document.createElement("p");
-                suggestion_button.innerHTML = '<small class="text-muted"><i class="glyphicon glyphicon glyphicon-globe"></i> suggest change</small>'
-                suggestion_button.setAttribute('user_id', message['sender']);
-                suggestion_button.setAttribute('message_id', message['message_id']);
-                edit_div.appendChild(suggestion_button);
-                //show_translation.appendChild(msg);
-
-                var change_div = document.createElement("div");
-                change_div.className = "change";
-
-
-                change_div.appendChild(document.createElement("hr"));
-                var suggestion_text = document.createElement("textarea");
-                suggestion_text.className = "form-control"
-                suggestion_text.id = "suggestion-" + message['message_id']
-                suggestion_text.name = "message"
-                suggestion_text.rows = "2"
-                suggestion_text.cols = "30"
-                suggestion_text.innerHTML = "Suggestion Here"
-
-                change_div.appendChild(suggestion_text);
-
-                change_div.appendChild(document.createElement("br"));
-
-                var suggestion_submit = document.createElement("input");
-                suggestion_submit.type = "submit";
-                suggestion_submit.setAttribute('user_id', message['sender']);
-                suggestion_submit.setAttribute('message_id', message['message_id']);
-                suggestion_submit.className = "submit-suggestion";
-
-                change_div.appendChild(suggestion_submit);
-
-                translation_div.appendChild(edit_div);
-                translation_div.appendChild(change_div);
-
-                li.appendChild(icon);
-                db.appendChild(show_translation);
-                db.appendChild(translation_div);
-                dp.appendChild(dh);
-                dp.appendChild(db);
-                li.appendChild(dp);
-
-                timeline.appendChild(li);
-                window.scrollTo(0, document.body.scrollHeight);
-
-            }
 
 
             console.log("Connected: ", details);
@@ -322,10 +193,8 @@
             function on_message(args) {
                 var data = args[0];
                 console.log("on_message() event received with data ")
-                draw_message(data, session.id);
-                v.message_list.push({
-                    message: data
-                });
+                console.log(data);
+                    v.message_list.push(data);
             }
 
             session.subscribe('chat.on_message', on_message).then(
@@ -341,14 +210,15 @@
             //
             function on_suggestion(args) {
                 var data = args[0];
-                console.log("on_suggestion() event received with data ")
-                console.log(data);
-                alert("edit recieved");
-                var icon = document.getElementById("message-icon-" + message['message_id'])
-                icon.className = "timeline-badge danger"
+                console.log("on_suggestion() event received with data ");
+                v.suggestion_list =  Object.assign({}, v.suggestion_list, {[data['message_id']]:data});
+                var KEY = data['message_id'];
+                if (!(KEY in v.edit_list)) 
+                {v.edit_list[KEY] = [];    }
+                v.edit_list[KEY].push(data);
             }
 
-            session.subscribe('on_suggestion.' + session.id, on_suggestion).then(
+            session.subscribe('chat.on_suggestion.' + v.user, on_suggestion).then(
                 function(sub) {
                     console.log('subscribed to topic chat.edit.' + session.id);
                 },
@@ -356,11 +226,6 @@
                     console.log('failed to subscribe to topic chat.edit', err);
                 }
             );
-
-
-       
-
-
 
         };
 
