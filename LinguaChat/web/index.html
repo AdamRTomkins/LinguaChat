@@ -5,10 +5,9 @@
     <meta charset="UTF-8">
     <title>Bootstrap Timeline</title>
 
-
     <link rel='stylesheet prefetch' href='http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css'>
-
     <link rel="stylesheet" href="css/style.css">
+
     <script src="js/bootbox.js"></script>
     <script src="https://unpkg.com/vue"></script>
 
@@ -16,6 +15,13 @@
 
 <body>
 
+    <div>
+    <H1> TODO: </H1>
+    <ul>
+        <li> Stop Being able to accept your own edits</li>
+        <li>  </li> 
+    </ul>
+    </div>
     <div id="app">
         <p>Username: {{ user }} </p>
 
@@ -28,6 +34,7 @@
             <div class="page-header">
                 <h1 id="timeline">L'Adventure de Francais</h1>
             </div>
+            
             <ul class="timeline" id="tl">
 
                 <li v-for="(item,index) in message_list" >
@@ -35,14 +42,13 @@
                         <div class="timeline-panel">
                         <div class="timeline-body">
 
-
-                        {{ item.message }} <button v-on:click="removeMessage(index,item.author,item.message_id)">reject</button>
+                        {{ message_object[item].message }} <button v-on:click="removeMessage(index,item.author,item.message_id)">remove</button>
                         <ul>
-                            <li v-for="edit in edit_list[item.message_id]"> {{ edit.message }}
-                            <button v-on:click="acceptEdit(edit.message_id,edit.exit_id,edit.message)">accept</button> 
+                            <li v-for="edit in edit_list[item]"> {{ edit.message }}
+                            <button v-on:click="acceptEdit(edit.message_id,edit.edit_id,edit.message)">accept</button> 
                             </li>
                         </ul>
-                        <edit-form v-on:event_child="sendEdit" :message_id=item.message_id :author_id=item.author></edit-form>
+                        <edit-form v-on:event_child="sendEdit" :message_id=item :author_id=message_object[item].author></edit-form>
                         </div>
                     </div>
                 </li>
@@ -130,16 +136,21 @@
                     message: '',
                     translation: '',
                     message_list: [],
+                    message_object: {},
                     suggestion_list: {},
                     edit_list : {}
                 },
                 
                 methods: {
-                    //acceptEdit: function(edit.message_id,edit.exit_id,edit.message)
-                    //{
-                    //    // Update Local Record
-                    //    // Forward Update to All Listeners
-                    //},
+                    acceptEdit: function(message_id,edit_id,message)
+                    {
+                        // Update Local Record
+                        Vue.set(this.message_object[message_id],'message', message);
+                        Vue.delete(this.edit_list[message_id],[edit_id]);
+                        // Forward Update to All Listeners
+                        message_data = {"message_id":message_id,"edit_id":edit_id,"message":message}
+                        session.publish('chat.on_accepted_edit', [message_data]);
+                    },
                     sendEdit: function(message_id,author_id,message)
                     {
                         var message_data = {};
@@ -149,18 +160,20 @@
                         message_data['edit_id'] = 'edit-' +  '-' + this.room + '-' + Date.now();
                         
                         session.publish('chat.on_suggestion.'+author_id, [message_data]);
-                        this.suggestion_list=  Object.assign({}, this.suggestion_list, {[message_id]:message_data});
-                        var KEY = message_id;
-                        if (!(KEY in this.edit_list)) 
-                        {this.edit_list[KEY] = [];    }
-                
-                        this.edit_list[KEY].push(message_data);    
+                        //this.suggestion_list=  Object.assign({}, this.suggestion_list, {[message_id]:message_data});
+                        
+                        if (!(this.edit_list[message_id])){
+                            alert("None");
+                            Vue.set(this.edit_list,message_data['message_id'], {[message_data['edit_id']]: message_data});
+                        } else {
+                            alert("Some");
+                            Vue.set(this.edit_list[message_data['message_id']], [message_data['edit_id']], message_data);
+                        }
                     },
 
                     removeMessage: function(index,author,message_id) {
                         this.message_list.splice(index, 1);
-                        alert(author);
-                        alert(message_id);
+                         Vue.delete(this.message_object,message_id)
                     },
 
                     sendMessage: function() {
@@ -176,7 +189,9 @@
 
                         session.publish('chat.on_message', [message_data]);
                         message_data['class'] = "timeline-inverted"
-                        this.message_list.push(message_data);
+                        Vue.set(this.message_object,message_data['message_id'], message_data);
+                        this.message_list.push(message_data['message_id']);
+                    
                     }
                 }
 
@@ -191,10 +206,11 @@
             // SUBSCRIBE to a topic and receive events
             //
             function on_message(args) {
-                var data = args[0];
+                var message_data = args[0];
                 console.log("on_message() event received with data ")
-                console.log(data);
-                    v.message_list.push(data);
+                console.log(message_data);
+                Vue.set(v.message_object,message_data['message_id'], message_data);
+                v.message_list.push(message_data['message_id']);
             }
 
             session.subscribe('chat.on_message', on_message).then(
@@ -206,16 +222,44 @@
                 }
             );
 
+            function on_accepted_edit(args){
+                var data = args[0]
+                console.log("On accepted Edit recieved ")
+                // Update Local Record
+                var message_id = data["message_id"]
+                var edit_id = data["edit_id"]
+                Vue.set(v.message_object[message_id],'message', data["message"]);
+                Vue.delete(v.edit_list[message_id],[edit_id]);
+            }
+
+           
+            session.subscribe('chat.on_accepted_edit', on_accepted_edit).then(
+                function(sub) {
+                    console.log('subscribed to topic chat.on_accepted_edit');
+                },
+                function(err) {
+                    console.log('failed to subscribe to topic chat.on_accepted_edit', err);
+                }
+            );
+
+ 
+
             // SUBSCRIBE to a topic and receive events
             //
             function on_suggestion(args) {
                 var data = args[0];
                 console.log("on_suggestion() event received with data ");
-                v.suggestion_list =  Object.assign({}, v.suggestion_list, {[data['message_id']]:data});
-                var KEY = data['message_id'];
-                if (!(KEY in v.edit_list)) 
-                {v.edit_list[KEY] = [];    }
-                v.edit_list[KEY].push(data);
+                //v.suggestion_list =  Object.assign({}, v.suggestion_list, {[data['message_id']]:data});
+                //var KEY = data['message_id'];
+                //if (!(KEY in v.edit_list)) 
+                //{v.edit_list[KEY] = [];    }
+                //v.edit_list[KEY].push(data);
+
+                if (!(v.edit_list[data["message_id"]])){
+                    Vue.set(v.edit_list,data['message_id'], {[data['edit_id']]: data});
+                } else {
+                    Vue.set(v.edit_list[data['message_id']], [data['edit_id']], data);
+                }
             }
 
             session.subscribe('chat.on_suggestion.' + v.user, on_suggestion).then(
